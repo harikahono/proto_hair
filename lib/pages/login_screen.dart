@@ -142,8 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   'By continuing, you agree to our Terms & Privacy Policy',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.small.copyWith(
-                     // ⬇️ PERBAIKAN: withAlpha(179)
-                     color: AppColors.mutedForeground.withAlpha(179), // opacity 0.7
+                     color: AppColors.mutedForeground.withAlpha(179),
                      fontSize: 12,
                   ),
                 ),
