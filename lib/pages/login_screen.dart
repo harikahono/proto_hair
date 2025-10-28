@@ -13,14 +13,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // State
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _showPassword = false;
-
-  // Hapus warna brand karena sudah ada di tema
-  // static const Color _brandColor = Color(0xFFFF6B35); <-- DIHAPUS
-  static const Color _gradientStart = Color(0xFF1C2526); // Tetap untuk gradient spesifik
+  static const Color _gradientStart = Color(0xFF1C2526);
 
   @override
   void dispose() {
@@ -29,7 +25,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // --- Navigasi ---
   void _onLogin() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -50,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [_gradientStart, Colors.black], // Gradient tetap
+            colors: [_gradientStart, Colors.black],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -58,7 +53,6 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // --- Header ---
               Padding(
                 padding: const EdgeInsets.only(
                     top: 80, bottom: 32, left: 24, right: 24),
@@ -66,13 +60,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       'Welcome Back',
-                      // Gunakan style tema, override warna putih terang
                       style: AppTextStyles.h1.copyWith(color: AppColors.foreground),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Login to continue',
-                       // Gunakan style tema, override warna muted foreground
                       style: AppTextStyles.p.copyWith(
                         color: AppColors.mutedForeground,
                       ),
@@ -80,22 +72,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-
-              // --- Login Form ---
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
-                      // Email
                       AuthTextField(
                         label: 'Email',
                         hintText: 'your@email.com',
                         controller: _emailController,
                       ),
                       const SizedBox(height: 16),
-
-                      // Password
                       AuthTextField(
                         label: 'Password',
                         hintText: 'Enter your password',
@@ -109,45 +96,35 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-
-                      // Forgot Password
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: () {},
-                          child: const Text(
-                            'Forgot Password?',
-                            // Style diambil dari TextButtonTheme di main.dart
-                          ),
+                          child: const Text('Forgot Password?'),
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // Login Button
                       SizedBox(
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
                           onPressed: _onLogin,
-                          // Style diambil dari ElevatedButtonTheme di main.dart
-                          child: const Text('Login'), // Text style diambil dari ElevatedButtonTheme
+                          child: const Text('Login'),
                         ),
                       ),
-
-                      // Register Link
                       Padding(
                         padding:
                             const EdgeInsets.only(top: 24, bottom: 16),
                         child: RichText(
                           text: TextSpan(
-                            style: AppTextStyles.small.copyWith( // Gunakan style small
+                            style: AppTextStyles.small.copyWith(
                               color: AppColors.mutedForeground,
                             ),
                             children: [
                               const TextSpan(text: "Don't have an account? "),
                               TextSpan(
                                 text: 'Register',
-                                style: TextStyle(color: AppColors.primary), // Warna oranye
+                                style: TextStyle(color: AppColors.primary),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = _onNavigateToRegister,
                               ),
@@ -159,15 +136,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-
-              // --- Footer ---
               Padding(
                 padding: const EdgeInsets.all(32),
                 child: Text(
                   'By continuing, you agree to our Terms & Privacy Policy',
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.small.copyWith( // Gunakan style small
-                     color: AppColors.mutedForeground.withOpacity(0.7), // Lebih redup lagi
+                  style: AppTextStyles.small.copyWith(
+                     // ⬇️ PERBAIKAN: withAlpha(179)
+                     color: AppColors.mutedForeground.withAlpha(179), // opacity 0.7
                      fontSize: 12,
                   ),
                 ),

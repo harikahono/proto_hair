@@ -12,17 +12,13 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  // State
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _showPassword = false;
   bool _showConfirmPassword = false;
-
-  // Hapus warna brand karena sudah ada di tema
-  // static const Color _brandColor = Color(0xFFFF6B35); <-- DIHAPUS
-  static const Color _gradientStart = Color(0xFF1C2526); // Tetap untuk gradient spesifik
+  static const Color _gradientStart = Color(0xFF1C2526);
 
   @override
   void dispose() {
@@ -33,7 +29,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // --- Navigasi ---
   void _onRegister() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -52,7 +47,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [_gradientStart, Colors.black], // Gradient tetap
+            colors: [_gradientStart, Colors.black],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -60,7 +55,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // --- Header ---
               Padding(
                 padding: const EdgeInsets.only(
                     top: 64, bottom: 24, left: 24, right: 24),
@@ -68,13 +62,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     Text(
                       'Create Account',
-                      // Gunakan style tema, override warna putih terang
                       style: AppTextStyles.h1.copyWith(color: AppColors.foreground),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Join us today',
-                      // Gunakan style tema, override warna muted foreground
                       style: AppTextStyles.p.copyWith(
                         color: AppColors.mutedForeground,
                       ),
@@ -82,30 +74,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ],
                 ),
               ),
-
-              // --- Register Form ---
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
-                      // Name
                       AuthTextField(
                         label: 'Full Name',
                         hintText: 'Your name',
                         controller: _nameController,
                       ),
                       const SizedBox(height: 16),
-
-                      // Email
                       AuthTextField(
                         label: 'Email',
                         hintText: 'your@email.com',
                         controller: _emailController,
                       ),
                       const SizedBox(height: 16),
-
-                      // Password
                       AuthTextField(
                         label: 'Password',
                         hintText: 'Create a password',
@@ -119,8 +104,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-
-                      // Confirm Password
                       AuthTextField(
                         label: 'Confirm Password',
                         hintText: 'Confirm your password',
@@ -134,25 +117,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         },
                       ),
                       const SizedBox(height: 32),
-
-                      // Register Button
                       SizedBox(
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
                           onPressed: _onRegister,
-                          // Style diambil dari ElevatedButtonTheme di main.dart
-                          child: const Text('Register'), // Text style diambil dari ElevatedButtonTheme
+                          child: const Text('Register'),
                         ),
                       ),
-
-                      // Login Link
                       Padding(
                         padding:
                             const EdgeInsets.only(top: 24, bottom: 16),
                         child: RichText(
                           text: TextSpan(
-                             style: AppTextStyles.small.copyWith( // Gunakan style small
+                             style: AppTextStyles.small.copyWith(
                               color: AppColors.mutedForeground,
                             ),
                             children: [
@@ -160,7 +138,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   text: "Already have an account? "),
                               TextSpan(
                                 text: 'Login',
-                                style: TextStyle(color: AppColors.primary), // Warna oranye
+                                style: TextStyle(color: AppColors.primary),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = _onNavigateToLogin,
                               ),
@@ -172,15 +150,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
               ),
-
-              // --- Footer ---
               Padding(
                 padding: const EdgeInsets.all(32),
                 child: Text(
                   'By continuing, you agree to our Terms & Privacy Policy',
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.small.copyWith( // Gunakan style small
-                     color: AppColors.mutedForeground.withOpacity(0.7), // Lebih redup lagi
+                  style: AppTextStyles.small.copyWith(
+                     // ⬇️ PERBAIKAN: withAlpha(179)
+                     color: AppColors.mutedForeground.withAlpha(179), // opacity 0.7
                      fontSize: 12,
                   ),
                 ),
