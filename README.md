@@ -23,15 +23,6 @@ Prototipe aplikasi mobile yang dibangun menggunakan Flutter, memungkinkan penggu
 * **Navigasi Antar Halaman:** Alur pengguna yang jelas antar fitur.
 * **Tema Gelap:** Desain UI konsisten dengan tema gelap dan aksen warna oranye.
 
-## Tampilan Aplikasi
-
-*(Sangat disarankan untuk menambahkan beberapa screenshot atau GIF di sini untuk memamerkan UI aplikasi kamu!)*
-
-Contoh:
-`![Login Screen](link-ke-screenshot-login.png)`
-`![Home Screen](link-ke-screenshot-home.png)`
-`![AR Camera](link-ke-screenshot-kamera.png)`
-
 ## Teknologi yang Digunakan
 
 * **Framework:** Flutter
