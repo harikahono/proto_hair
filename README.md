@@ -1,11 +1,11 @@
-# Proto Hair - AR Hair Color Prototype 🎨
+# Proto Hair - AR Hair Color Prototype
 
 [![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-%230175C2.svg?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
 
 Prototipe aplikasi mobile yang dibangun menggunakan Flutter, memungkinkan pengguna untuk mencoba berbagai warna rambut secara virtual. Dengan slogan **"Try Before You Dye"**, aplikasi ini bertujuan memberikan gambaran visual sebelum pengguna memutuskan untuk mewarnai rambut.
 
-## ✨ Fitur Utama (Prototipe)
+## Fitur Utama (Prototipe)
 
 * **Splash Screen:** Animasi pembuka saat aplikasi dimuat.
 * **Autentikasi (UI):** Tampilan layar Login dan Registrasi (tanpa logika backend).
@@ -32,7 +32,7 @@ Contoh:
 `![Home Screen](link-ke-screenshot-home.png)`
 `![AR Camera](link-ke-screenshot-kamera.png)`
 
-## 🚀 Teknologi yang Digunakan
+## Teknologi yang Digunakan
 
 * **Framework:** Flutter
 * **Bahasa:** Dart
@@ -42,7 +42,7 @@ Contoh:
     * `uuid`: Untuk generate ID unik gambar (simulasi).
     * `intl`: Untuk format tanggal di galeri.
 
-## ⚙️ Cara Menjalankan Proyek
+## Cara Menjalankan Proyek
 
 1.  **Prasyarat:**
     * Pastikan kamu sudah menginstal [Flutter SDK](https://flutter.dev/docs/get-started/install).
@@ -69,7 +69,7 @@ Contoh:
     flutter run
     ```
 
-## 📝 Catatan
+## Catatan
 
 * Ini adalah **prototipe** yang fokus pada **User Interface (UI)** dan **User Experience (UX)**.
 * Fitur seperti pemrosesan gambar AR *real-time*, integrasi kamera sesungguhnya, penyimpanan data persisten (backend/database), dan fungsionalitas *sharing* belum diimplementasikan.
