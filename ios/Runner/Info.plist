@@ -45,5 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-</dict>
+
+	<key>NSCameraUsageDescription</key>
+	<string>Aplikasi ini butuh akses kamera untuk fitur AR try-on warna rambut.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Aplikasi ini butuh akses mikrofon untuk rekam video (opsional).</string>
+	</dict>
 </plist>

@@ -16,18 +16,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // --- State Management Terpusat ---
   final List<SavedImage> _savedImages = [];
-  HairColor _selectedColor = kHairColors.first; // <-- Menggunakan kHairColors dari models.dart
-  bool _hasCaptured = false;
+  HairColor _selectedColor = kHairColors.first;
+  SavedImage? _capturedImage;
   final _uuid = Uuid();
 
-  // Warna kustom dari TSX
   static const Color _brandColor = Color(0xFFFF6B35);
   static const Color _gradientStart = Color(0xFF1C2526);
   static const Color _cardIconBgDark = Color(0xFF1C2526);
-
-  // --- Callback untuk Navigasi & Aksi ---
 
   void _onNavigateToCamera() {
     Navigator.push(
@@ -35,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(
         builder: (context) => ARCameraScreen(
           selectedColor: _selectedColor,
-          hasCapturedImage: _hasCaptured,
+          hasCapturedImage: _capturedImage != null,
           onBack: () => Navigator.pop(context),
           onColorSelect: (color) {
             setState(() {
@@ -51,15 +47,13 @@ class _HomeScreenState extends State<HomeScreen> {
               timestamp: DateTime.now(),
             );
             setState(() {
-              _savedImages.add(newImage);
-              _hasCaptured = true;
+              _capturedImage = newImage;
             });
           },
           onOpenGallery: _onNavigateToGallery,
           onOpenBeforeAfter: () {
-            // Buka 'before/after' untuk gambar terakhir
-            if (_savedImages.isNotEmpty) {
-              _onNavigateToBeforeAfter(_savedImages.last);
+            if (_capturedImage != null) {
+              _onNavigateToBeforeAfter(_capturedImage!);
             }
           },
         ),
@@ -95,8 +89,17 @@ class _HomeScreenState extends State<HomeScreen> {
           image: image,
           onBack: () => Navigator.pop(context),
           onSave: () {
-            // Logika 'save' sudah terjadi di onCapture,
-            // jadi ini mungkin hanya untuk konfirmasi
+            setState(() {
+              if (!_savedImages.any((img) => img.id == image.id)) {
+                _savedImages.add(image);
+              }
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Disimpan ke galeri!'),
+                backgroundColor: _brandColor,
+              ),
+            );
           },
           onShare: () {
             // TODO: Implement share logic
@@ -135,7 +138,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // --- Header ---
               Padding(
                 padding: const EdgeInsets.only(
                     top: 64, bottom: 32, left: 24, right: 24),
@@ -155,8 +157,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-
-              // --- Menu Cards ---
               Expanded(
                 child: Padding(
                   padding:
@@ -188,14 +188,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         subtitle: 'Pelajari tentang warna rambut',
                         icon: LucideIcons.info,
                         iconBgColor: const Color(0xFF4B5563),
-                        onPressed: _onNavigateToInfo, // Ini akan memanggil fungsi baru
+                        onPressed: _onNavigateToInfo,
                       ),
                     ],
                   ),
                 ),
               ),
-
-              // --- Footer ---
               Padding(
                 padding: const EdgeInsets.all(32),
                 child: Text(
@@ -214,7 +212,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// --- Widget _MenuCardButton (Tidak berubah) ---
 class _MenuCardButton extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -305,7 +302,7 @@ class _MenuCardButton extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyles.h3.copyWith(
-                    color: const Color(0xFF1C2526), // _cardTitleColor
+                    color: const Color(0xFF1C2526),
                   ),
                 ),
                 const SizedBox(height: 4),

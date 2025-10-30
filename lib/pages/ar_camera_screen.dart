@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:proto_hair/models.dart';
+import 'package:proto_hair/services/ai_service.dart';
 
 class ARCameraScreen extends StatefulWidget {
   final HairColor selectedColor;
@@ -30,49 +32,154 @@ class ARCameraScreen extends StatefulWidget {
 
 class _ARCameraScreenState extends State<ARCameraScreen> {
   bool _isScanning = false;
-  final String _localImagePath = "assets/images/zee-selfie.jpg";
   static const Color _brandColor = Color(0xFFFF6B35);
   static const Color _bgColor = Color(0xFF1C2526);
 
-  void _handleCapture() {
+  CameraController? _controller;
+  bool _isScreenReady = false;
+  final AIService _aiService = AIService();
+
+  // --- STATE LOKAL BUAT WARNA (FIX 'BOLD' BUG) ---
+  late HairColor _selectedColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedColor = widget.selectedColor; // Inisialisasi state lokal
+    _loadServices();
+  }
+
+  Future<void> _loadServices() async {
+    try {
+      final bool modelLoaded = await _aiService.loadModel();
+      if (!modelLoaded && mounted) {
+        debugPrint("Error: Model AI gagal di-load.");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Gagal memuat engine AI.")),
+        );
+        return;
+      }
+
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        debugPrint("Error: No cameras available.");
+        return;
+      }
+
+      final frontCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras.first,
+      );
+
+      _controller = CameraController(
+        frontCamera,
+        ResolutionPreset.high,
+        enableAudio: false,
+      );
+
+      await _controller!.initialize();
+      if (!mounted) return;
+
+      setState(() {
+        _isScreenReady = true;
+      });
+    } catch (e) {
+      debugPrint("Failed to initialize services: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    _aiService.dispose();
+    super.dispose();
+  }
+
+  void _handleCapture() async {
+    if (!_isScreenReady || _controller?.value.isTakingPicture == true) {
+      return;
+    }
+
     setState(() {
       _isScanning = true;
     });
 
-    Timer(const Duration(seconds: 1), () {
-      widget.onCapture(_localImagePath, _localImagePath);
+    try {
+      final XFile originalImage = await _controller!.takePicture();
+
+      // Pake state lokal _selectedColor
+      final String processedImagePath = await _aiService.processImage(
+        originalImage,
+        _selectedColor.color,
+      );
+
+      if (!mounted) return;
+
+      widget.onCapture(originalImage.path, processedImagePath);
+
       setState(() {
         _isScanning = false;
       });
+
       widget.onOpenBeforeAfter();
-    });
+    } catch (e) {
+      debugPrint("Error taking picture or processing: $e");
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_isScreenReady) {
+      return Scaffold(
+        backgroundColor: _bgColor,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Colors.white),
+              SizedBox(height: 16),
+              Text(
+                "Loading camera & AI engine...",
+                style: TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final size = MediaQuery.of(context).size;
+    final deviceRatio = size.width / size.height;
+    final cameraRatio = _controller!.value.aspectRatio;
+    final scale = 1 / (cameraRatio * deviceRatio);
+
     return Scaffold(
       backgroundColor: _bgColor,
       body: Stack(
         children: [
-          // --- Camera View (Mock) ---
           Positioned.fill(
-            child: Image.asset(
-              _localImagePath,
-              fit: BoxFit.cover,
-              color: widget.selectedColor.color.withAlpha(51), // opacity-20
-              colorBlendMode: BlendMode.multiply,
-              errorBuilder: (context, error, stackTrace) {
-                // Jangan gunakan print di production, tapi oke untuk debug
-                // print("Error loading asset: $error");
-                return Container(
-                  color: Colors.red.withAlpha(77), // opacity 0.3
-                  child: const Center(child: Text("Gagal load asset!\nCek path & pubspec.yaml", textAlign: TextAlign.center, style: TextStyle(color: Colors.white))),
-                );
-              },
+            child: Transform.scale(
+              scale: scale,
+              alignment: Alignment.center,
+              child: CameraPreview(_controller!),
             ),
           ),
-
-          // --- Top Controls ---
+          Positioned.fill(
+            child: ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                _selectedColor.color.withAlpha(51), // Pake state lokal
+                BlendMode.multiply,
+              ),
+              child: Container(
+                color: Colors.transparent,
+              ),
+            ),
+          ),
           Positioned(
             top: 0,
             left: 0,
@@ -101,8 +208,8 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
                               ? widget.onOpenBeforeAfter
                               : null,
                           color: widget.hasCapturedImage
-                              ? _brandColor.withAlpha(230) // opacity 0.9
-                              : Colors.white.withAlpha(26), // opacity 0.1
+                              ? _brandColor.withAlpha(230)
+                              : Colors.white.withAlpha(26),
                         ),
                       ],
                     ),
@@ -111,8 +218,6 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
               ),
             ),
           ),
-
-          // --- Bottom Controls ---
           Positioned(
             bottom: 0,
             left: 0,
@@ -128,12 +233,10 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
               ),
             ),
           ),
-
-          // --- Scanning Overlay ---
           if (_isScanning)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withAlpha(153), // opacity 0.6
+                color: Colors.black.withAlpha(153),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -143,7 +246,7 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Scanning Hair...',
+                        'Processing Image...',
                         style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     ],
@@ -169,7 +272,7 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: color ?? Colors.white.withAlpha(51), // opacity 0.2
+            color: color ?? Colors.white.withAlpha(51),
             shape: BoxShape.circle,
           ),
           child: IconButton(
@@ -197,18 +300,26 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(77), // opacity 0.3
+                    color: Colors.black.withAlpha(77),
                     borderRadius: BorderRadius.circular(26),
                     border: Border.all(
-                      color: Colors.white.withAlpha(102), // opacity 0.4
+                      color: Colors.white.withAlpha(102),
                       width: 2,
                     ),
                   ),
                   child: Row(
                     children: kHairColors.map((color) {
-                      final isSelected = widget.selectedColor.id == color.id;
+                      // Cek 'isSelected' pake state lokal
+                      final isSelected = _selectedColor.id == color.id;
                       return TextButton(
-                        onPressed: () => widget.onColorSelect(color),
+                        onPressed: () {
+                          // Update state lokal (buat UI)
+                          setState(() {
+                            _selectedColor = color;
+                          });
+                          // Update state parent (buat HomeScreen)
+                          widget.onColorSelect(color);
+                        },
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           backgroundColor:
@@ -220,11 +331,12 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
                         child: Text(
                           color.name,
                           style: TextStyle(
-                            color: Colors.white.withAlpha(isSelected ? 255 : 179), // opacity 0.7
+                            color: Colors.white
+                                .withAlpha(isSelected ? 255 : 179),
                             fontSize: 14,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
+                            // Terapin 'bold' berdasarkan state lokal
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
                       );
@@ -248,7 +360,7 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(51), // opacity 0.2
+            color: Colors.black.withAlpha(51),
             blurRadius: 10,
             spreadRadius: 2,
           )
