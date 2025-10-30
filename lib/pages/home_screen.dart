@@ -7,6 +7,7 @@ import 'package:proto_hair/pages/gallery_screen.dart';
 import 'package:proto_hair/theme/app_theme.dart';
 import 'package:uuid/uuid.dart';
 import 'package:proto_hair/pages/hair_color_info_screen.dart';
+import 'package:share_plus/share_plus.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +25,14 @@ class _HomeScreenState extends State<HomeScreen> {
   static const Color _brandColor = Color(0xFFFF6B35);
   static const Color _gradientStart = Color(0xFF1C2526);
   static const Color _cardIconBgDark = Color(0xFF1C2526);
+
+  void _onShareImage(SavedImage image) {
+    // Kita share file 'afterImage'-nya
+    Share.shareXFiles(
+      [XFile(image.afterImage)],
+      text: 'Cek warna rambut baru gue! Dibuat pake AR Hair Color app.',
+    );
+  }
 
   void _onNavigateToCamera() {
     Navigator.push(
@@ -69,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
           images: _savedImages,
           onBack: () => Navigator.pop(context),
           onShare: (image) {
-            // TODO: Implement share logic
+            _onShareImage(image);
           },
           onDelete: (id) {
             setState(() {
@@ -102,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
           onShare: () {
-            // TODO: Implement share logic
+            _onShareImage(image);
           },
         ),
       ),
