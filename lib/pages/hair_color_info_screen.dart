@@ -138,7 +138,6 @@ class _HairColorInfoScreenState extends State<HairColorInfoScreen> {
                   FloatingActionButton.extended(
                     heroTag: 'tryon_btn',
                     onPressed: () {
-                      final selectedItem = kHairColorGallery.firstWhere((i) => i.id == selectedColorItemId);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
