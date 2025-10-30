@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class HairColor {
   final String id;
   final String name;
-  final Color color; // Menggunakan Color dari Flutter
+  final Color color;
 
   const HairColor({
     required this.id,
@@ -13,20 +13,42 @@ class HairColor {
   });
 }
 
-// ⬇️ PERBAIKAN: Mengganti nama variabel ini
-// Mock data untuk kHairColors (sesuai TSX)
 const List<HairColor> kHairColors = [
-  HairColor(id: '1', name: 'Natural', color: Colors.transparent),
-  HairColor(id: '2', name: 'Red', color: Color(0xFFE53935)),
-  HairColor(id: '3', name: 'Blue', color: Color(0xFF1E88E5)),
-  HairColor(id: '4', name: 'Green', color: Color(0xFF43A047)),
-  HairColor(id: '5', name: 'Purple', color: Color(0xFF8E24AA)),
-  HairColor(id: '6', name: 'Pink', color: Color(0xFFD81B60)),
-  HairColor(id: '7', name: 'Orange', color: Color(0xFFF4511E)),
-];
-// ⬆️ AKHIR PERBAIKAN
+  HairColor(id: 'natural', name: 'Natural', color: Colors.transparent),
 
-/// --- DATA MODEL UNTUK GAMBAR TERSIMPAN ---
+  // Data diambil dari kHairColorGallery di file hair_color_info_screen.dart
+  HairColor(
+    id: 'golden_honey',
+    name: 'Golden Honey',
+    color: Color(0xFFF5E050),
+  ),
+  HairColor(
+    id: 'deep_espresso',
+    name: 'Deep Espresso',
+    color: Color(0xFF5C4033),
+  ),
+  HairColor(
+    id: 'cherry_noir',
+    name: 'Cherry Noir',
+    color: Color(0xFFFF0000),
+  ),
+  HairColor(
+    id: 'platinum_ice',
+    name: 'Platinum Ice',
+    color: Color(0xFFA9A9A9),
+  ),
+  HairColor(
+    id: 'lavender_dream',
+    name: 'Lavender Dream',
+    color: Color(0xFFB39DDB),
+  ),
+  HairColor(
+    id: 'electric_blue',
+    name: 'Electric Blue',
+    color: Color(0xFF29B6F6),
+  ),
+];
+
 class SavedImage {
   final String id;
   final String beforeImage; // URL
