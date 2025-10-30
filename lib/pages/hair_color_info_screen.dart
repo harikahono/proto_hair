@@ -77,6 +77,18 @@ class HairColorInfoScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppColors.background.withValues(alpha: 0.9),
+                  AppColors.background,
+                ],
+              ),
+            ),
+          ),
           Positioned(
             top: 156.0,
             left: 0,
@@ -87,7 +99,7 @@ class HairColorInfoScreen extends StatelessWidget {
               child: Column(
                 children: [
                   ...kHairColorInfo.map((info) => Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
+                        padding: const EdgeInsets.only(bottom: 20.0),
                         child: _buildInfoCard(context, info),
                       )),
                   const SizedBox(height: 8),
@@ -108,7 +120,17 @@ class HairColorInfoScreen extends StatelessWidget {
       left: 0,
       right: 0,
       child: Container(
-        color: AppColors.background,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.background,
+              AppColors.background.withValues(alpha: 0.9),
+              AppColors.background.withValues(alpha: 0.7),
+            ],
+          ),
+        ),
         child: SafeArea(
           bottom: false,
           child: Padding(
@@ -118,17 +140,43 @@ class HairColorInfoScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    IconButton(
-                      icon: Icon(LucideIcons.arrowLeft, color: AppColors.foreground),
-                      onPressed: onBack,
-                      splashRadius: 24,
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.card,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: Icon(LucideIcons.arrowLeft, color: AppColors.foreground),
+                        onPressed: onBack,
+                        splashRadius: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    Icon(LucideIcons.palette, color: AppColors.primary, size: 24),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Hair Color Info',
-                      style: AppTextStyles.h2.copyWith(color: AppColors.foreground),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                      ),
+                      child: Icon(LucideIcons.palette, color: AppColors.primary, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Hair Color Info',
+                        style: AppTextStyles.h2.copyWith(
+                          color: AppColors.foreground,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -140,6 +188,7 @@ class HairColorInfoScreen extends StatelessWidget {
                     style: AppTextStyles.p.copyWith(
                       color: AppColors.mutedForeground,
                       fontSize: 14,
+                      height: 1.4,
                     ),
                   ),
                 ),
@@ -153,46 +202,63 @@ class HairColorInfoScreen extends StatelessWidget {
 
   Widget _buildInfoCard(BuildContext context, HairInfo info) {
     return Container(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16.0),
+        borderRadius: BorderRadius.circular(20.0),
         border: Border.all(
-          color: AppColors.border,
+          color: AppColors.border.withValues(alpha: 0.3),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
                   color: info.color,
                   shape: BoxShape.circle,
                   border: Border.all(
-                     // ⬇️ PERBAIKAN: withAlpha(26)
-                    color: AppColors.foreground.withAlpha(26), // opacity 0.1
+                    color: AppColors.foreground.withAlpha(26),
                     width: 2.0,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: info.color.withValues(alpha: 0.2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       info.name,
-                      style: AppTextStyles.h3.copyWith(color: AppColors.cardForeground),
+                      style: AppTextStyles.h3.copyWith(
+                        color: AppColors.cardForeground,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 6),
                     Text(
                       info.description,
                       style: AppTextStyles.p.copyWith(
                         color: AppColors.mutedForeground,
                         fontSize: 14,
+                        height: 1.4,
                       ),
                     ),
                   ],
@@ -200,13 +266,19 @@ class HairColorInfoScreen extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            height: 1,
+            color: AppColors.border.withValues(alpha: 0.2),
+          ),
           const SizedBox(height: 16),
           Column(
             children: [
               _buildInfoRow("Warna Kulit:", info.skinTones),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               _buildInfoRow("Perawatan:", info.maintenance),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               _buildInfoRow("Tips:", info.tips),
             ],
           )
@@ -220,25 +292,37 @@ class HairColorInfoScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          margin: const EdgeInsets.only(top: 6.0),
-          width: 6,
-          height: 6,
+          margin: const EdgeInsets.only(top: 8.0),
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         Expanded(
           child: Text.rich(
             TextSpan(
-              style: AppTextStyles.p.copyWith(color: AppColors.cardForeground, fontSize: 14),
+              style: AppTextStyles.p.copyWith(
+                color: AppColors.cardForeground, 
+                fontSize: 14,
+                height: 1.5,
+              ),
               children: [
                 TextSpan(
                   text: '$title ',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.cardForeground,
+                  ),
                 ),
-                TextSpan(text: text),
+                TextSpan(
+                  text: text,
+                  style: TextStyle(
+                    color: AppColors.mutedForeground,
+                  ),
+                ),
               ],
             ),
           ),
@@ -249,27 +333,50 @@ class HairColorInfoScreen extends StatelessWidget {
 
   Widget _buildGeneralTipsCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(16.0),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.9),
+            AppColors.primary,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20.0),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Tips Umum Pewarnaan Rambut',
-            style: AppTextStyles.h3.copyWith(color: AppColors.primaryForeground),
+          Row(
+            children: [
+              Icon(LucideIcons.lightbulb, color: AppColors.primaryForeground, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Tips Umum Pewarnaan Rambut',
+                style: AppTextStyles.h3.copyWith(
+                  color: AppColors.primaryForeground,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Column(
             children: [
               _buildTipRow('Lakukan skin test untuk menghindari alergi'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               _buildTipRow('Konsultasi dengan hair stylist profesional'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               _buildTipRow('Gunakan produk perawatan khusus rambut berwarna'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               _buildTipRow('Hindari bleaching berlebihan untuk menjaga kesehatan rambut'),
             ],
           )
@@ -279,20 +386,32 @@ class HairColorInfoScreen extends StatelessWidget {
   }
 
   Widget _buildTipRow(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-         Text(
-          '•  ',
-          style: TextStyle(color: AppColors.primaryForeground, fontSize: 14, height: 1.5),
-        ),
-        Expanded(
-          child: Text(
-            text,
-            style: AppTextStyles.p.copyWith(color: AppColors.primaryForeground, fontSize: 14),
+    return Padding(
+      padding: const EdgeInsets.only(left: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '•  ',
+            style: TextStyle(
+              color: AppColors.primaryForeground, 
+              fontSize: 16, 
+              height: 1.5,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-      ],
+          Expanded(
+            child: Text(
+              text,
+              style: AppTextStyles.p.copyWith(
+                color: AppColors.primaryForeground, 
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
