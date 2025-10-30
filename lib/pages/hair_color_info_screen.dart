@@ -1,412 +1,599 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:proto_hair/theme/app_theme.dart';
+import 'package:proto_hair/pages/ar_camera_screen.dart';
+import 'package:proto_hair/models.dart';
 
-// --- DATA MODEL & DATA ---
-class HairInfo {
+// --- DATA MODEL ---
+class HairColorItem {
   final String id;
   final String name;
+  final String category;
   final Color color;
-  final String description;
-  final String skinTones;
-  final String maintenance;
-  final String tips;
+  final String assetPath;
 
-  const HairInfo({
+  const HairColorItem({
     required this.id,
     required this.name,
+    required this.category,
     required this.color,
-    required this.description,
-    required this.skinTones,
-    required this.maintenance,
-    required this.tips,
+    required this.assetPath,
   });
 }
 
-const List<HairInfo> kHairColorInfo = [
-  HairInfo(
-      id: 'blonde',
-      name: 'Pirang',
-      color: Color(0xFFF5E050),
-      description: 'Warna terang yang memberikan kesan fresh dan youthful',
-      skinTones: 'Cocok untuk kulit cerah hingga medium',
-      maintenance: 'Membutuhkan perawatan ekstra untuk menjaga warna',
-      tips: 'Gunakan shampoo khusus rambut pirang untuk mencegah warna kuning'),
-  HairInfo(
-      id: 'brown',
-      name: 'Coklat',
-      color: Color(0xFF5C4033),
-      description: 'Warna natural yang versatile dan mudah dipadukan',
-      skinTones: 'Cocok untuk semua warna kulit',
-      maintenance: 'Perawatan sedang, warna lebih tahan lama',
-      tips: 'Pilih shade coklat yang sesuai dengan undertone kulit kamu'),
-  HairInfo(
-      id: 'red',
-      name: 'Merah',
-      color: Color(0xFFFF0000),
-      description: 'Warna bold yang membuat kamu stand out dari crowd',
-      skinTones: 'Cocok untuk kulit cerah dan medium warm',
-      maintenance: 'Warna cepat pudar, butuh touch-up rutin',
-      tips: 'Hindari terlalu sering keramas untuk menjaga warna'),
-  HairInfo(
-      id: 'black',
-      name: 'Hitam',
-      color: Color(0xFF000000),
-      description: 'Warna klasik yang memberikan kesan elegan dan sleek',
-      skinTones: 'Cocok untuk semua warna kulit',
-      maintenance: 'Perawatan mudah, warna sangat tahan lama',
-      tips: 'Gunakan hair oil untuk menjaga kilau rambut hitam'),
-  HairInfo(
-      id: 'gray',
-      name: 'Abu-abu',
-      color: Color(0xFFA9A9A9),
-      description: 'Warna trendy yang memberikan kesan edgy dan modern',
-      skinTones: 'Cocok untuk kulit cerah dan cool undertone',
-      maintenance: 'Membutuhkan bleaching, perawatan intensif',
-      tips: 'Gunakan purple shampoo untuk mencegah warna kuning'),
+// --- DATA ---
+const List<HairColorItem> kHairColorGallery = [
+  HairColorItem(
+    id: 'golden_honey',
+    name: 'Golden Honey',
+    category: 'Blondes',
+    color: Color(0xFFF5E050),
+    assetPath: 'assets/images/golden.jpg',
+  ),
+  HairColorItem(
+    id: 'deep_espresso',
+    name: 'Deep Espresso',
+    category: 'Brunettes',
+    color: Color(0xFF5C4033),
+    assetPath: 'assets/images/deep.jpg',
+  ),
+  HairColorItem(
+    id: 'cherry_noir',
+    name: 'Cherry Noir',
+    category: 'Reds',
+    color: Color(0xFFFF0000),
+    assetPath: 'assets/images/cherry.jpg',
+  ),
+  HairColorItem(
+    id: 'platinum_ice',
+    name: 'Platinum Ice',
+    category: 'Blondes',
+    color: Color(0xFFA9A9A9),
+    assetPath: 'assets/images/ice.jpg',
+  ),
+  HairColorItem(
+    id: 'lavender_dream',
+    name: 'Lavender Dream',
+    category: 'Pastels',
+    color: Color(0xFFB39DDB),
+    assetPath: 'assets/images/lavender.jpeg',
+  ),
+  HairColorItem(
+    id: 'electric_blue',
+    name: 'Electric Blue',
+    category: 'Vivids',
+    color: Color(0xFF29B6F6),
+    assetPath: 'assets/images/blue.jpg',
+  ),
 ];
 
 // --- WIDGET ---
-class HairColorInfoScreen extends StatelessWidget {
+class HairColorInfoScreen extends StatefulWidget {
   final VoidCallback onBack;
 
-  const HairColorInfoScreen({super.key, required this.onBack});
+  const HairColorInfoScreen({
+    super.key,
+    required this.onBack,
+  });
+
+  @override
+  State<HairColorInfoScreen> createState() => _HairColorInfoScreenState();
+}
+
+class _HairColorInfoScreenState extends State<HairColorInfoScreen> {
+  String selectedCategory = 'All';
+  Set<String> favoriteIds = {};
+  String? selectedColorItemId;
+  final List<String> categories = ['All', 'Favorites', 'Blondes', 'Brunettes', 'Reds', 'Blacks'];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.background.withValues(alpha: 0.9),
-                  AppColors.background,
-                ],
+          Column(
+            children: [
+              _buildAppBar(context),
+              _buildCategoryTabs(),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16.0,
+                    mainAxisSpacing: 16.0,
+                    childAspectRatio: 0.8,
+                  ),
+                  itemCount: _filteredItems.length,
+                  itemBuilder: (context, index) {
+                    final item = _filteredItems[index];
+                    return _buildColorCard(item);
+                  },
+                ),
               ),
-            ),
-          ),
-          Positioned(
-            top: 156.0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 32.0),
-              child: Column(
-                children: [
-                  ...kHairColorInfo.map((info) => Padding(
-                        padding: const EdgeInsets.only(bottom: 20.0),
-                        child: _buildInfoCard(context, info),
-                      )),
-                  const SizedBox(height: 8),
-                  _buildGeneralTipsCard(context),
-                ],
-              ),
-            ),
-          ),
-          _buildHeader(context),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppColors.background,
-              AppColors.background.withValues(alpha: 0.9),
-              AppColors.background.withValues(alpha: 0.7),
             ],
           ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.card,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+          // ✨ Floating Buttons - muncul kalo udah pilih warna (kecuali di Favorites)
+          if (selectedColorItemId != null && selectedCategory != 'Favorites')
+            Positioned(
+              right: 16,
+              bottom: 24,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Info Button
+                  FloatingActionButton(
+                    heroTag: 'info_btn',
+                    onPressed: () => _showColorInfo(
+                      kHairColorGallery.firstWhere((i) => i.id == selectedColorItemId)
+                    ),
+                    backgroundColor: AppColors.card,
+                    foregroundColor: AppColors.primary,
+                    elevation: 8,
+                    child: Icon(LucideIcons.info, size: 24),
+                  ),
+                  SizedBox(width: 12),
+                  // Try On Button
+                  FloatingActionButton.extended(
+                    heroTag: 'tryon_btn',
+                    onPressed: () {
+                      final selectedItem = kHairColorGallery.firstWhere((i) => i.id == selectedColorItemId);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ARCameraScreen(
+                            selectedColor: kHairColors.first,
+                            hasCapturedImage: false,
+                            onBack: () => Navigator.pop(context),
+                            onColorSelect: (color) {},
+                            onCapture: (before, after) {},
+                            onOpenGallery: () {},
+                            onOpenBeforeAfter: () {},
                           ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: Icon(LucideIcons.arrowLeft, color: AppColors.foreground),
-                        onPressed: onBack,
-                        splashRadius: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-                      ),
-                      child: Icon(LucideIcons.palette, color: AppColors.primary, size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Hair Color Info',
-                        style: AppTextStyles.h2.copyWith(
-                          color: AppColors.foreground,
-                          fontWeight: FontWeight.w600,
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text(
-                    'Pilih warna rambut yang cocok untuk kamu',
-                    style: AppTextStyles.p.copyWith(
-                      color: AppColors.mutedForeground,
-                      fontSize: 14,
-                      height: 1.4,
+                      );
+                    },
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.primaryForeground,
+                    elevation: 8,
+                    icon: Icon(LucideIcons.camera, size: 20),
+                    label: Text(
+                      'Try ${kHairColorGallery.firstWhere((i) => i.id == selectedColorItemId).name}',
+                      style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildInfoCard(BuildContext context, HairInfo info) {
+  List<HairColorItem> get _filteredItems {
+    if (selectedCategory == 'All') {
+      return kHairColorGallery;
+    } else if (selectedCategory == 'Favorites') {
+      return kHairColorGallery.where((item) => favoriteIds.contains(item.id)).toList();
+    } else {
+      return kHairColorGallery.where((item) => item.category == selectedCategory).toList();
+    }
+  }
+
+  void _toggleFavorite(HairColorItem item) {
+    setState(() {
+      if (favoriteIds.contains(item.id)) {
+        favoriteIds.remove(item.id);
+      } else {
+        favoriteIds.add(item.id);
+      }
+    });
+  }
+
+  Widget _buildAppBar(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(20.0),
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.3),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.background,
+            AppColors.background.withValues(alpha: 0.9),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(LucideIcons.arrowLeft, color: AppColors.foreground),
+            onPressed: widget.onBack,
+            splashRadius: 20,
+          ),
+          const Spacer(),
+          Text(
+            'Color Gallery',
+            style: AppTextStyles.h2.copyWith(
+              color: AppColors.foreground,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: Icon(LucideIcons.search, color: AppColors.foreground),
+            onPressed: () {},
+            splashRadius: 20,
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: info.color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.foreground.withAlpha(26),
-                    width: 2.0,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: info.color.withValues(alpha: 0.2),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+    );
+  }
+
+  Widget _buildCategoryTabs() {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: categories.map((category) {
+          final isSelected = selectedCategory == category;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: FilterChip(
+              label: Text(
+                category,
+                style: TextStyle(
+                  color: isSelected ? AppColors.primaryForeground : AppColors.foreground,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
+              selected: isSelected,
+              selectedColor: AppColors.primary,
+              checkmarkColor: AppColors.primaryForeground,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              onSelected: (bool selected) {
+                setState(() {
+                  selectedCategory = selected ? category : 'All';
+                  // Reset selection kalo pindah kategori
+                  if (selectedCategory == 'Favorites') {
+                    selectedColorItemId = null;
+                  }
+                });
+              },
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // Fungsi untuk show info detail
+  void _showColorInfo(HairColorItem item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header dengan gambar
+            Expanded(
+              flex: 2,
+              child: Container(
+                width: double.infinity,
+                margin: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      item.color.withValues(alpha: 0.3),
+                      item.color.withValues(alpha: 0.6),
+                    ],
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.asset(
+                    item.assetPath,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Center(
+                      child: Icon(LucideIcons.palette, size: 64, color: item.color),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Info detail
+            Expanded(
+              flex: 3,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      info.name,
-                      style: AppTextStyles.h3.copyWith(
-                        color: AppColors.cardForeground,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: item.color,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.border, width: 2),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.name,
+                                style: AppTextStyles.h2.copyWith(
+                                  color: AppColors.cardForeground,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                item.category,
+                                style: AppTextStyles.p.copyWith(
+                                  color: AppColors.mutedForeground,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Favorite button di info dialog
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.card.withValues(alpha: 0.7),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              LucideIcons.heart,
+                              color: favoriteIds.contains(item.id) ? Colors.red : AppColors.mutedForeground,
+                              size: 20,
+                            ),
+                            onPressed: () => _toggleFavorite(item),
+                            splashRadius: 20,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      info.description,
-                      style: AppTextStyles.p.copyWith(
-                        color: AppColors.mutedForeground,
-                        fontSize: 14,
-                        height: 1.4,
+                    SizedBox(height: 24),
+                    _buildInfoSection('Description', 
+                      'A beautiful ${item.name.toLowerCase()} shade perfect for any occasion. This color brings out natural warmth and complements various skin tones.'),
+                    SizedBox(height: 16),
+                    _buildInfoSection('Best For', 
+                      'Warm to neutral skin tones. Works great for both natural and bold looks.'),
+                    SizedBox(height: 16),
+                    _buildInfoSection('Maintenance', 
+                      'Requires color-safe shampoo and regular touch-ups every 4-6 weeks.'),
+                    SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          if (selectedCategory != 'Favorites') {
+                            setState(() {
+                              selectedColorItemId = item.id;
+                            });
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.primaryForeground,
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: Icon(LucideIcons.camera),
+                        label: Text('Try This Color', style: TextStyle(fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Container(
-            width: double.infinity,
-            height: 1,
-            color: AppColors.border.withValues(alpha: 0.2),
-          ),
-          const SizedBox(height: 16),
-          Column(
-            children: [
-              _buildInfoRow("Warna Kulit:", info.skinTones),
-              const SizedBox(height: 14),
-              _buildInfoRow("Perawatan:", info.maintenance),
-              const SizedBox(height: 14),
-              _buildInfoRow("Tips:", info.tips),
-            ],
-          )
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildInfoRow(String title, String text) {
-    return Row(
+  Widget _buildInfoSection(String title, String content) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          margin: const EdgeInsets.only(top: 8.0),
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
+        Text(
+          title,
+          style: AppTextStyles.h3.copyWith(
+            color: AppColors.cardForeground,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text.rich(
-            TextSpan(
-              style: AppTextStyles.p.copyWith(
-                color: AppColors.cardForeground, 
-                fontSize: 14,
-                height: 1.5,
-              ),
-              children: [
-                TextSpan(
-                  text: '$title ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.cardForeground,
-                  ),
-                ),
-                TextSpan(
-                  text: text,
-                  style: TextStyle(
-                    color: AppColors.mutedForeground,
-                  ),
-                ),
-              ],
-            ),
+        SizedBox(height: 8),
+        Text(
+          content,
+          style: AppTextStyles.p.copyWith(
+            color: AppColors.mutedForeground,
+            height: 1.5,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildGeneralTipsCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24.0),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary.withValues(alpha: 0.9),
-            AppColors.primary,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20.0),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildColorCard(HairColorItem item) {
+    final isFavorite = favoriteIds.contains(item.id);
+    final isSelected = selectedCategory != 'Favorites' && selectedColorItemId == item.id;
+    
+    return GestureDetector(
+      onTap: () {
+        if (selectedCategory != 'Favorites') {
+          // Mode normal: pilih untuk try on
+          setState(() {
+            selectedColorItemId = isSelected ? null : item.id;
+          });
+        } else {
+          // Mode favorites: langsung buka info
+          _showColorInfo(item);
+        }
+      },
+      child: Stack(
         children: [
-          Row(
-            children: [
-              Icon(LucideIcons.lightbulb, color: AppColors.primaryForeground, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Tips Umum Pewarnaan Rambut',
-                style: AppTextStyles.h3.copyWith(
-                  color: AppColors.primaryForeground,
-                  fontWeight: FontWeight.w600,
-                ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected 
+                    ? AppColors.primary 
+                    : AppColors.border.withValues(alpha: 0.3),
+                width: isSelected ? 3 : 1,
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Column(
-            children: [
-              _buildTipRow('Lakukan skin test untuk menghindari alergi'),
-              const SizedBox(height: 12),
-              _buildTipRow('Konsultasi dengan hair stylist profesional'),
-              const SizedBox(height: 12),
-              _buildTipRow('Gunakan produk perawatan khusus rambut berwarna'),
-              const SizedBox(height: 12),
-              _buildTipRow('Hindari bleaching berlebihan untuk menjaga kesehatan rambut'),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTipRow(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '•  ',
-            style: TextStyle(
-              color: AppColors.primaryForeground, 
-              fontSize: 16, 
-              height: 1.5,
-              fontWeight: FontWeight.w600,
+              boxShadow: [
+                BoxShadow(
+                  color: isSelected
+                      ? AppColors.primary.withValues(alpha: 0.3)
+                      : Colors.black.withValues(alpha: 0.05),
+                  blurRadius: isSelected ? 12 : 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ✅ Image dengan Expanded biar auto-crop
+                Expanded(
+                  flex: 3,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            item.color.withValues(alpha: 0.3),
+                            item.color.withValues(alpha: 0.6),
+                          ],
+                        ),
+                      ),
+                      child: Image.asset(
+                        item.assetPath,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.palette,
+                                size: 48,
+                                color: item.color,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                item.name,
+                                style: TextStyle(
+                                  color: item.color,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        style: AppTextStyles.h3.copyWith(
+                          color: AppColors.cardForeground,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.category,
+                        style: AppTextStyles.p.copyWith(
+                          color: AppColors.mutedForeground,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          Expanded(
-            child: Text(
-              text,
-              style: AppTextStyles.p.copyWith(
-                color: AppColors.primaryForeground, 
-                fontSize: 14,
-                height: 1.5,
+          // Checkmark kalo selected
+          if (isSelected)
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  LucideIcons.check,
+                  color: AppColors.primaryForeground,
+                  size: 20,
+                ),
+              ),
+            ),
+          // Heart button di kiri atas
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.card.withValues(alpha: 0.7),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(
+                  LucideIcons.heart,
+                  color: isFavorite ? Colors.red : AppColors.mutedForeground,
+                  size: 20,
+                ),
+                onPressed: () => _toggleFavorite(item),
+                splashRadius: 20,
               ),
             ),
           ),

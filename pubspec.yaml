@@ -31,5 +31,10 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/
+    - assets/images/blue.jpg
+    - assets/images/cherry.jpg
+    - assets/images/deep.jpg
+    - assets/images/golden.jpg
+    - assets/images/ice.jpg
+    - assets/images/lavender.jpeg
     - assets/models/
