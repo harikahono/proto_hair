@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:proto_hair/models.dart';
 import 'package:proto_hair/services/ai_service.dart';
+import 'package:proto_hair/theme/app_theme.dart';
 
 class ARCameraScreen extends StatefulWidget {
   final HairColor selectedColor;
@@ -30,22 +31,26 @@ class ARCameraScreen extends StatefulWidget {
   State<ARCameraScreen> createState() => _ARCameraScreenState();
 }
 
-class _ARCameraScreenState extends State<ARCameraScreen> {
+class _ARCameraScreenState extends State<ARCameraScreen> with SingleTickerProviderStateMixin {
   bool _isScanning = false;
-  static const Color _brandColor = Color(0xFFFF6B35);
-  static const Color _bgColor = Color(0xFF1C2526);
-
   CameraController? _controller;
   bool _isScreenReady = false;
   final AIService _aiService = AIService();
-
-  // --- STATE LOKAL BUAT WARNA (FIX 'BOLD' BUG) ---
   late HairColor _selectedColor;
+  late AnimationController _scanController;
+  late Animation<double> _scanAnimation;
 
   @override
   void initState() {
     super.initState();
-    _selectedColor = widget.selectedColor; // Inisialisasi state lokal
+    _selectedColor = widget.selectedColor;
+    _scanController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _scanAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _scanController, curve: Curves.easeInOut),
+    );
     _loadServices();
   }
 
@@ -55,7 +60,10 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
       if (!modelLoaded && mounted) {
         debugPrint("Error: Model AI gagal di-load.");
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Gagal memuat engine AI.")),
+          SnackBar(
+            content: const Text("Gagal memuat engine AI."),
+            backgroundColor: AppColors.destructive,
+          ),
         );
         return;
       }
@@ -92,6 +100,7 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
   void dispose() {
     _controller?.dispose();
     _aiService.dispose();
+    _scanController.dispose();
     super.dispose();
   }
 
@@ -103,11 +112,11 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
     setState(() {
       _isScanning = true;
     });
+    _scanController.repeat();
 
     try {
       final XFile originalImage = await _controller!.takePicture();
 
-      // Pake state lokal _selectedColor
       final String processedImagePath = await _aiService.processImage(
         originalImage,
         _selectedColor.color,
@@ -117,6 +126,7 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
 
       widget.onCapture(originalImage.path, processedImagePath);
 
+      _scanController.stop();
       setState(() {
         _isScanning = false;
       });
@@ -125,6 +135,7 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
     } catch (e) {
       debugPrint("Error taking picture or processing: $e");
       if (mounted) {
+        _scanController.stop();
         setState(() {
           _isScanning = false;
         });
@@ -136,16 +147,33 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
   Widget build(BuildContext context) {
     if (!_isScreenReady) {
       return Scaffold(
-        backgroundColor: _bgColor,
+        backgroundColor: AppColors.background,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(color: Colors.white),
-              SizedBox(height: 16),
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                  strokeWidth: 3,
+                ),
+              ),
+              const SizedBox(height: 24),
               Text(
-                "Loading camera & AI engine...",
-                style: TextStyle(color: Colors.white70),
+                "Initializing Camera",
+                style: AppTextStyles.h3.copyWith(
+                  color: AppColors.foreground,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Loading AI engine...",
+                style: AppTextStyles.p.copyWith(
+                  color: AppColors.mutedForeground,
+                ),
               ),
             ],
           ),
@@ -159,9 +187,10 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
     final scale = 1 / (cameraRatio * deviceRatio);
 
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
+          // Camera Preview
           Positioned.fill(
             child: Transform.scale(
               scale: scale,
@@ -169,47 +198,78 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
               child: CameraPreview(_controller!),
             ),
           ),
-          Positioned.fill(
-            child: ColorFiltered(
-              colorFilter: ColorFilter.mode(
-                _selectedColor.color.withAlpha(51), // Pake state lokal
-                BlendMode.multiply,
-              ),
-              child: Container(
-                color: Colors.transparent,
+          
+          // Top gradient overlay
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 120,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.6),
+                    Colors.black.withValues(alpha: 0.3),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
+          
+          // Bottom gradient overlay
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 200,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.8),
+                    Colors.black.withValues(alpha: 0.4),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          // Top Bar
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: SafeArea(
+              bottom: false,
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildBlurButton(
+                    _buildIconButton(
                       icon: LucideIcons.arrowLeft,
                       onPressed: widget.onBack,
                     ),
                     Row(
                       children: [
-                        _buildBlurButton(
+                        _buildIconButton(
                           icon: LucideIcons.grid3x3,
                           onPressed: widget.onOpenGallery,
                         ),
                         const SizedBox(width: 8),
-                        _buildBlurButton(
+                        _buildIconButton(
                           icon: LucideIcons.gitCompare,
                           onPressed: widget.hasCapturedImage
                               ? widget.onOpenBeforeAfter
                               : null,
-                          color: widget.hasCapturedImage
-                              ? _brandColor.withAlpha(230)
-                              : Colors.white.withAlpha(26),
+                          isActive: widget.hasCapturedImage,
                         ),
                       ],
                     ),
@@ -218,36 +278,91 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
               ),
             ),
           ),
+          
+          // Bottom Controls
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: SafeArea(
+              top: false,
               child: Column(
                 children: [
                   _buildColorSelector(),
                   const SizedBox(height: 24),
                   _buildCaptureButton(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
           ),
+          
+          // Scanning Overlay
           if (_isScanning)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withAlpha(153),
+                color: Colors.black.withValues(alpha: 0.7),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircularProgressIndicator(
-                        color: Colors.white,
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Rotating gradient ring
+                          AnimatedBuilder(
+                            animation: _scanAnimation,
+                            builder: (context, child) => Transform.rotate(
+                              angle: _scanAnimation.value * 6.28,
+                              child: Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: SweepGradient(
+                                    colors: [
+                                      AppColors.primary,
+                                      Colors.transparent,
+                                    ],
+                                    stops: const [0.5, 1.0],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Inner circle
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              LucideIcons.sparkles,
+                              color: AppColors.primary,
+                              size: 32,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
                       Text(
-                        'Processing Image...',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                        'Processing Your Look',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Applying ${_selectedColor.name}...',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -259,116 +374,142 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
     );
   }
 
-  Widget _buildBlurButton({
+  Widget _buildIconButton({
     required IconData icon,
     required VoidCallback? onPressed,
-    Color? color,
+    bool isActive = true,
   }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: color ?? Colors.white.withAlpha(51),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: Icon(icon, color: Colors.white, size: 24),
-            onPressed: onPressed,
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        color: isActive 
+            ? Colors.black.withValues(alpha: 0.4)
+            : Colors.black.withValues(alpha: 0.2),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isActive
+              ? Colors.white.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.1),
+          width: 1,
         ),
+      ),
+      child: IconButton(
+        icon: Icon(
+          icon,
+          color: isActive ? Colors.white : Colors.white38,
+          size: 22,
+        ),
+        onPressed: onPressed,
+        padding: const EdgeInsets.all(12),
       ),
     );
   }
 
   Widget _buildColorSelector() {
     return Container(
-      height: 52,
-      alignment: Alignment.center,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(26),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(77),
-                    borderRadius: BorderRadius.circular(26),
-                    border: Border.all(
-                      color: Colors.white.withAlpha(102),
-                      width: 2,
-                    ),
-                  ),
-                  child: Row(
-                    children: kHairColors.map((color) {
-                      // Cek 'isSelected' pake state lokal
-                      final isSelected = _selectedColor.id == color.id;
-                      return TextButton(
-                        onPressed: () {
-                          // Update state lokal (buat UI)
-                          setState(() {
-                            _selectedColor = color;
-                          });
-                          // Update state parent (buat HomeScreen)
-                          widget.onColorSelect(color);
-                        },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          backgroundColor:
-                              isSelected ? color.color : Colors.transparent,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                          ),
-                        ),
-                        child: Text(
-                          color.name,
-                          style: TextStyle(
-                            color: Colors.white
-                                .withAlpha(isSelected ? 255 : 179),
-                            fontSize: 14,
-                            // Terapin 'bold' berdasarkan state lokal
-                            fontWeight:
-                                isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
+      height: 56,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.transparent.withValues(alpha: 0.2), // <-- Perubahan di sini
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: Colors.transparent.withValues(alpha: 0.1), // <-- Perubahan di sini
+                width: 1,
               ),
             ),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              itemCount: kHairColors.length,
+              itemBuilder: (context, index) {
+                final color = kHairColors[index];
+                final isSelected = _selectedColor.id == color.id;
+                
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedColor = color;
+                    });
+                    widget.onColorSelect(color);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? color.color.withValues(alpha: 0.9)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      border: isSelected
+                          ? Border.all(color: Colors.white, width: 2)
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        color.name,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.white70,
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildCaptureButton() {
-    return Container(
-      width: 64,
-      height: 64,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(51),
-            blurRadius: 10,
-            spreadRadius: 2,
-          )
+    return GestureDetector(
+      onTap: _handleCapture,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Outer ring
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+                width: 3,
+              ),
+            ),
+          ),
+          // Inner button
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Icon(
+              LucideIcons.camera,
+              color: AppColors.background,
+              size: 32,
+            ),
+          ),
         ],
-      ),
-      child: IconButton(
-        icon: Icon(LucideIcons.camera, color: _bgColor, size: 32),
-        onPressed: _handleCapture,
       ),
     );
   }
