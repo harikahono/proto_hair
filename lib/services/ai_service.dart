@@ -14,7 +14,7 @@ class AIService {
     try {
       final options = InterpreterOptions()..addDelegate(GpuDelegateV2());
       _interpreter = await Interpreter.fromAsset(
-        'assets/models/selfie_multiclass_256x256.tflite', //
+        'assets/models/selfie_multiclass_256x256.tflite',
         options: options,
       );
       _interpreter!.allocateTensors();
@@ -38,7 +38,7 @@ class AIService {
           await img.decodeImageFile(imageFile.path);
       if (originalImage == null) return imageFile.path;
 
-      // 1b. Kalo warnanya "Natural", gak usah proses, balikin aslinya
+      // 1b. Skip processing jika warna "Natural"
       if (targetColor == Colors.transparent) {
         debugPrint("Warna 'Natural' dipilih, skip processing.");
         return imageFile.path;
@@ -70,7 +70,7 @@ class AIService {
         ),
       );
 
-      // 3. Siapin Output (Benerin shape jadi 6)
+      // 3. Siapkan output tensor
       final output = List.generate(
         1,
         (_) => List.generate(
@@ -79,10 +79,10 @@ class AIService {
         ),
       );
 
-      // 4. Run Inference!
+      // 4. Run Inference (Jalankan model AI)
       _interpreter!.run(input, output);
 
-      // 5. Post-Processing (Bikin Mask)
+      // 5. Post-Processing (Buat Mask dari hasil AI)
       final img.Image hairMask =
           img.Image(width: _inputSize, height: _inputSize);
       final List<List<List<double>>> outputMask = output[0];
@@ -117,55 +117,65 @@ class AIService {
         interpolation: img.Interpolation.linear,
       );
 
-      // 7. BIKIN MASK JADI ALUS (FIX "KOTAK-KOTAK")
-      resizedMask = img.gaussianBlur(resizedMask, radius: 5); // Mainin angka 5 ini
+      // 7. Haluskan pinggiran mask
+      resizedMask = img.gaussianBlur(resizedMask, radius: 5);
 
-      // 8. Terapkan Warna ke Gambar Asli (Pake LOGIKA BLEND BARU)
+      // 8. Terapkan Warna (Logika Blending OVERLAY)
       final img.Image processedImage = img.Image.from(originalImage);
-
-      // ignore: deprecated_member_use
-      final int targetR = targetColor.red;
-      // ignore: deprecated_member_use
-      final int targetG = targetColor.green;
-      // ignore: deprecated_member_use
-      final int targetB = targetColor.blue;
 
       for (int y = 0; y < processedImage.height; y++) {
         for (int x = 0; x < processedImage.width; x++) {
-          final maskPixel = resizedMask.getPixel(x, y);
+          // Dapatkan nilai alpha (0.0 - 1.0) dari mask yang sudah di-blur
+          final double alpha = (resizedMask.getPixel(x, y).r / 255.0); 
           
-          // Ambil nilai keabuan mask (0-255) sebagai 'alpha'
-          final double alpha = (maskPixel.r / 255.0); 
-          
-          if (alpha > 0.1) { // Cuma proses kalo beneran bagian dari mask
+          if (alpha > 0.1) { // Hanya proses jika bagian dari mask
             final originalPixel = originalImage.getPixel(x, y);
 
-            final int oR = (originalPixel.r).round();
-            final int oG = (originalPixel.g).round();
-            final int oB = (originalPixel.b).round();
+            // Ambil nilai R,G,B dari target dan original (skala 0-255)
+            final double oR = originalPixel.r.toDouble();
+            final double oG = originalPixel.g.toDouble();
+            final double oB = originalPixel.b.toDouble();
 
-            // Logika blend 'multiply' (bisa diganti Overlay/SoftLight nanti)
-            int r = (oR * targetR) ~/ 255;
-            int g = (oG * targetG) ~/ 255;
-            int b = (oB * targetB) ~/ 255;
+            // ignore: deprecated_member_use
+            final double tR = targetColor.red.toDouble();
+            // ignore: deprecated_member_use
+            final double tG = targetColor.green.toDouble();
+            // ignore: deprecated_member_use
+            final double tB = targetColor.blue.toDouble();
 
-            // Logika Alpha Blending: (WarnaBaru * alpha) + (WarnaAsli * (1-alpha))
-            r = (r * alpha + oR * (1.0 - alpha)).round();
-            g = (g * alpha + oG * (1.0 - alpha)).round();
-            b = (b * alpha + oB * (1.0 - alpha)).round();
+            // --- LOGIKA OVERLAY ---
+            double r = (oR < 128)
+                ? (2 * oR * tR) / 255
+                : (255 - 2 * (255 - oR) * (255 - tR) / 255);
+            
+            double g = (oG < 128)
+                ? (2 * oG * tG) / 255
+                : (255 - 2 * (255 - oG) * (255 - tG) / 255);
 
-            processedImage.setPixelRgb(x, y, r, g, b);
+            double b = (oB < 128)
+                ? (2 * oB * tB) / 255
+                : (255 - 2 * (255 - oB) * (255 - tB) / 255);
+            // --- AKHIR LOGIKA OVERLAY ---
+
+            // Blend antara warna baru (hasil overlay) dan warna asli menggunakan alpha
+            r = (r * alpha + oR * (1.0 - alpha));
+            g = (g * alpha + oG * (1.0 - alpha));
+            b = (b * alpha + oB * (1.0 - alpha));
+
+            processedImage.setPixelRgb(x, y, r.round(), g.round(), b.round());
           }
         }
       }
 
-      // 9. Simpen ke file temporary
+      // 9. Simpan gambar ke file temporary
       final Directory tempDir = await getTemporaryDirectory();
       final String tempPath = '${tempDir.path}/${const Uuid().v4()}.jpg';
+      
       await img.encodeJpgFile(tempPath, processedImage, quality: 90);
 
-      debugPrint('Gambar selesai diproses, disimpan di: $tempPath');
+      debugPrint('Gambar selesai diproses (Metode Overlay), disimpan di: $tempPath');
       return tempPath;
+
     } catch (e) {
       debugPrint('Error processing image: $e');
       return imageFile.path;
