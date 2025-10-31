@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:proto_hair/models.dart';
+import 'package:proto_hair/theme/app_theme.dart';
 
 class BeforeAfterScreen extends StatefulWidget {
   final SavedImage image;
@@ -22,28 +22,64 @@ class BeforeAfterScreen extends StatefulWidget {
   State<BeforeAfterScreen> createState() => _BeforeAfterScreenState();
 }
 
-class _BeforeAfterScreenState extends State<BeforeAfterScreen> {
+class _BeforeAfterScreenState extends State<BeforeAfterScreen> with SingleTickerProviderStateMixin {
   double _sliderPosition = 0.5;
+  bool _showLabels = true;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
-  static const Color _brandColor = Color(0xFFFF6B35);
-  static const Color _bgColor = Color(0xFF1C2526);
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
 
-  void _handlePanStart(DragStartDetails details) {
-    final RenderBox box = context.findRenderObject() as RenderBox;
-    final newPosition =
-        box.globalToLocal(details.globalPosition).dx / box.size.width;
-    setState(() {
-      _sliderPosition = newPosition.clamp(0.0, 1.0);
+    // Auto-hide labels after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() => _showLabels = false);
+      }
     });
   }
 
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  void _handlePanStart(DragStartDetails details) {
+    setState(() => _showLabels = true);
+    _updateSliderPosition(details.globalPosition);
+  }
+
   void _handlePanUpdate(DragUpdateDetails details) {
-    final RenderBox box = context.findRenderObject() as RenderBox;
-    final newPosition =
-        box.globalToLocal(details.globalPosition).dx / box.size.width;
-    setState(() {
-      _sliderPosition = newPosition.clamp(0.0, 1.0);
+    _updateSliderPosition(details.globalPosition);
+  }
+
+  void _handlePanEnd(DragEndDetails details) {
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() => _showLabels = false);
+      }
     });
+  }
+
+  void _updateSliderPosition(Offset globalPosition) {
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    if (box != null) {
+      final localPosition = box.globalToLocal(globalPosition);
+      final newPosition = localPosition.dx / box.size.width;
+      setState(() {
+        _sliderPosition = newPosition.clamp(0.0, 1.0);
+      });
+    }
   }
 
   @override
@@ -51,122 +87,260 @@ class _BeforeAfterScreenState extends State<BeforeAfterScreen> {
     final screenSize = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: AppColors.background,
       body: Stack(
-        alignment: Alignment.center,
         children: [
-          GestureDetector(
-            onPanStart: _handlePanStart,
-            onPanUpdate: _handlePanUpdate,
-            child: Stack(
-              children: [
-                _buildImage(widget.image.afterImage),
-                Positioned(
-                  top: 100,
-                  right: 16,
-                  child: _buildLabelChip('After'),
-                ),
-                ClipPath(
-                  clipper: _ImageClipper(clipPercentage: _sliderPosition),
-                  child: _buildImage(widget.image.beforeImage),
-                ),
-                Positioned(
-                  top: 100,
-                  left: 16,
-                  child: _buildLabelChip('Before'),
-                ),
-              ],
+          // Main comparison area
+          Positioned.fill(
+            child: GestureDetector(
+              onPanStart: _handlePanStart,
+              onPanUpdate: _handlePanUpdate,
+              onPanEnd: _handlePanEnd,
+              child: Stack(
+                children: [
+                  // After image (background)
+                  _buildImage(widget.image.afterImage),
+                  
+                  // Before image (clipped)
+                  ClipPath(
+                    clipper: _ImageClipper(clipPercentage: _sliderPosition),
+                    child: _buildImage(widget.image.beforeImage),
+                  ),
+                  
+                  // Labels with fade animation
+                  AnimatedOpacity(
+                    opacity: _showLabels ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: 80,
+                          left: 20,
+                          child: _buildLabelChip('Before', isLeft: true),
+                        ),
+                        Positioned(
+                          top: 80,
+                          right: 20,
+                          child: _buildLabelChip('After', isLeft: false),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
+          
+          // Slider line and handle
           Positioned(
-            left: (screenSize.width * _sliderPosition) - 2,
-            child: Container(
-              width: 4,
-              height: screenSize.height,
-              color: Colors.white,
-              child: Center(
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                      )
-                    ],
-                  ),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(width: 2, height: 24, color: _bgColor),
-                        const SizedBox(width: 4),
-                        Container(width: 2, height: 24, color: _bgColor),
+            left: (screenSize.width * _sliderPosition) - 1.5,
+            top: 0,
+            bottom: 0,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    width: 3,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.3),
+                          Colors.white,
+                          Colors.white,
+                          Colors.white.withValues(alpha: 0.3),
+                        ],
+                        stops: const [0.0, 0.3, 0.7, 1.0],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                        ),
                       ],
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
+          
+          // Slider handle (draggable circle)
           Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(LucideIcons.arrowLeft,
-                          color: Colors.white, size: 28),
-                      onPressed: widget.onBack,
-                    ),
-                    _buildBlurButton(
-                      icon: LucideIcons.share2,
-                      onPressed: widget.onShare,
+            left: (screenSize.width * _sliderPosition) - 28,
+            top: (screenSize.height / 2) - 28,
+            child: AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) => Transform.scale(
+                scale: _pulseAnimation.value,
+                child: child,
+              ),
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 16,
+                      spreadRadius: 2,
                     ),
                   ],
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        LucideIcons.chevronLeft,
+                        size: 16,
+                        color: AppColors.background,
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        LucideIcons.chevronRight,
+                        size: 16,
+                        color: AppColors.background,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
+          
+          // Top bar
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.6),
+                    Colors.black.withValues(alpha: 0.3),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildIconButton(
+                        icon: LucideIcons.arrowLeft,
+                        onPressed: widget.onBack,
+                      ),
+                      _buildIconButton(
+                        icon: LucideIcons.share2,
+                        onPressed: widget.onShare,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          // Bottom bar
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildLabelChip('Warna: ${widget.image.colorUsed.name}'),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        onPressed: widget.onSave,
-                        icon: const Icon(LucideIcons.download, size: 20),
-                        label: const Text('Save to Gallery'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _brandColor,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.8),
+                    Colors.black.withValues(alpha: 0.4),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Color info
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: widget.image.colorUsed.color,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              widget.image.colorUsed.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Save button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: ElevatedButton.icon(
+                          onPressed: widget.onSave,
+                          icon: const Icon(LucideIcons.download, size: 22),
+                          label: const Text(
+                            'Save to Gallery',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.primaryForeground,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(27),
+                            ),
+                            elevation: 8,
+                            shadowColor: AppColors.primary.withValues(alpha: 0.5),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -177,59 +351,87 @@ class _BeforeAfterScreenState extends State<BeforeAfterScreen> {
   }
 
   Widget _buildImage(String url) {
-    return Image.file(
-      File(url),
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          color: Colors.grey[900],
-          child: const Center(
-            child: Icon(Icons.broken_image, color: Colors.grey),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildBlurButton({
-    required IconData icon,
-    required VoidCallback? onPressed,
-  }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(51),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: Icon(icon, color: Colors.white, size: 20),
-            onPressed: onPressed,
-          ),
-        ),
+    return SizedBox.expand(
+      child: Image.file(
+        File(url),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: AppColors.card,
+            child: Center(
+              child: Icon(
+                LucideIcons.imageOff,
+                color: AppColors.mutedForeground,
+                size: 48,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildLabelChip(String text) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.black.withAlpha(128),
-          ),
-          child: Text(
-            text,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-          ),
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+          width: 1,
         ),
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white, size: 24),
+        onPressed: onPressed,
+        padding: const EdgeInsets.all(12),
+      ),
+    );
+  }
+
+  Widget _buildLabelChip(String text, {required bool isLeft}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isLeft) ...[
+            Icon(
+              LucideIcons.arrowLeft,
+              color: Colors.white,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+          if (!isLeft) ...[
+            const SizedBox(width: 6),
+            Icon(
+              LucideIcons.arrowRight,
+              color: Colors.white,
+              size: 16,
+            ),
+          ],
+        ],
       ),
     );
   }
