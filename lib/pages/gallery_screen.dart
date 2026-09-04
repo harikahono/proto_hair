@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -89,8 +90,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                // ⬇️ PERBAIKAN: withAlpha(128)
-                color: AppColors.muted.withAlpha(128), // opacity 0.5
+                color: AppColors.muted.withAlpha(128),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -144,20 +144,22 @@ class _GalleryScreenState extends State<GalleryScreen> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(
-                    image.afterImage,
+                  Image.file(
+                    File(image.afterImage),
                     fit: BoxFit.cover,
-                    frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                    frameBuilder:
+                        (context, child, frame, wasSynchronouslyLoaded) {
                       if (wasSynchronouslyLoaded) return child;
                       return AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
-                        child: frame != null ? child : Container(color: AppColors.card),
+                        child: frame != null
+                            ? child
+                            : Container(color: AppColors.card),
                       );
                     },
-                    errorBuilder: (context, error, stackTrace) =>
-                        Center(child: Icon(Icons.broken_image, color: AppColors.mutedForeground.withAlpha(179))), // opacity 0.7
-                    color: image.colorUsed.color.withAlpha(77), // opacity 0.3
-                    colorBlendMode: BlendMode.multiply,
+                    errorBuilder: (context, error, stackTrace) => Center(
+                        child: Icon(Icons.broken_image,
+                            color: AppColors.mutedForeground.withAlpha(179))),
                   ),
                   Positioned(
                     bottom: 8,
@@ -170,7 +172,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.black.withAlpha(128), // opacity 0.5
+                            color: Colors.black.withAlpha(128),
                           ),
                           child: Text(
                             image.colorUsed.name,
@@ -196,7 +198,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
     return Positioned.fill(
       child: Container(
-        color: AppColors.background.withAlpha(230), // opacity 0.9
+        color: AppColors.background.withAlpha(230),
         child: Column(
           children: [
             SafeArea(
@@ -254,11 +256,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
                     fit: StackFit.expand,
                     alignment: Alignment.center,
                     children: [
-                      Image.network(
-                        image.afterImage,
+                      Image.file(
+                        File(image.afterImage),
                         fit: BoxFit.contain,
-                        color: image.colorUsed.color.withAlpha(77), // opacity 0.3
-                        colorBlendMode: BlendMode.multiply,
                       ),
                     ],
                   ),
@@ -270,7 +270,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
                   width: double.infinity,
-                  color: AppColors.background.withAlpha(128), // opacity 0.5
+                  color: AppColors.background.withAlpha(128),
                   padding: const EdgeInsets.all(16.0),
                   child: SafeArea(
                     top: false,
@@ -278,15 +278,20 @@ class _GalleryScreenState extends State<GalleryScreen> {
                       children: [
                         Text(
                           'Warna: ${image.colorUsed.name}',
-                          style: AppTextStyles.p.copyWith(
-                              color: AppColors.foreground),
+                          style: AppTextStyles.p
+                              .copyWith(color: AppColors.foreground),
+                          // --- FIX "OVERFLOW" ---
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          // --- AKHIR FIX ---
                         ),
                         const SizedBox(height: 4),
                         Text(
                           DateFormat('d MMMM yyyy', 'id_ID')
                               .format(image.timestamp),
                           style: AppTextStyles.small.copyWith(
-                              color: AppColors.mutedForeground.withAlpha(153)), // opacity 0.6
+                              color:
+                                  AppColors.mutedForeground.withAlpha(153)),
                         ),
                       ],
                     ),
@@ -312,7 +317,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.background.withAlpha(77), // opacity 0.3
+            color: AppColors.background.withAlpha(77),
             shape: BoxShape.circle,
           ),
           child: IconButton(
