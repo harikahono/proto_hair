@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:proto_hair/pages/login_screen.dart';
 import 'package:proto_hair/pages/splash_screen.dart';
 import 'package:proto_hair/theme/app_theme.dart';
-import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +35,7 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: AppColors.background,
         primaryColor: AppColors.primary,
-        textTheme: TextTheme(
+        textTheme: const TextTheme(
           headlineLarge: AppTextStyles.h1,
           headlineMedium: AppTextStyles.h2,
           headlineSmall: AppTextStyles.h3,
@@ -57,10 +57,11 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
         textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          textStyle: AppTextStyles.buttonSecondary,
-        )),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            textStyle: AppTextStyles.buttonSecondary,
+          ),
+        ),
       ),
       home: _showSplashScreen
           ? SplashScreen(onFinish: _finishSplash)

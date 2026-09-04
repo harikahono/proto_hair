@@ -24,7 +24,7 @@ android {
         applicationId = "com.example.proto_hair"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -37,6 +37,24 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    sourceSets["main"].jniLibs.srcDirs("libs")
+}
+
+//repositories {
+//    flatDir {
+//        dirs("libs")
+//    }
+//}
+
+dependencies {
+    implementation("androidx.camera:camera-core:1.3.4")
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
+    implementation("androidx.camera:camera-view:1.3.4")
+    implementation("ai.deepar.ar:DeepAR:5.6.4")
+//    implementation(files("libs/deepar.aar"))
+//    implementation("ai.deepar.ar:DeepAR:6.0.0")
 }
 
 flutter {
